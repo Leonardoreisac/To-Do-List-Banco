@@ -106,18 +106,19 @@ fun Header(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Esquerda: menu + título
+
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { /* menu */ }) {
+                IconButton(onClick = {  }) {
                     Icon(imageVector = Icons.Default.Menu, contentDescription = "menu", tint = Color.White)
                 }
                 Spacer(modifier = Modifier.width(6.dp))
+
                 Text(text = "USUARIO", style = MaterialTheme.typography.titleLarge, color = Color.White)
             }
 
-            // Direita: notificações + avatar
+
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { /* notificações */ }) {
+                IconButton(onClick = { }) {
                     Icon(imageVector = Icons.Default.Notifications, contentDescription = "notificações", tint = Color.White)
                 }
 
@@ -152,7 +153,7 @@ fun Header(modifier: Modifier = Modifier) {
 @Composable
 fun UmaNota(nota: String, cor: Color, onClick: () -> Unit) {
     Card(
-        onClick = onClick, // agora responde a clique
+        onClick = onClick,
         colors = CardDefaults.cardColors(containerColor = cor),
         modifier = Modifier
             .fillMaxWidth()

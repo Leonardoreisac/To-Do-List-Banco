@@ -3,32 +3,29 @@ package com.example.myapplication
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
-import com.example.myapplication.ui.theme.MyApplicationTheme
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.myapplication.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,14 +42,117 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "home") {
+    NavHost(navController = navController, startDestination = "login") {
+        composable("login") { LoginScreen(navController) }
         composable("home") { TelaPerfil(navController) }
         composable("tarefas") { TarefasScreen() }
         composable("estatisticas") { EstatisticasScreen() }
         composable("checklist") { ChecklistScreen() }
+        composable("perfil") { PerfilScreen(navController) }
+        composable("configuracoes") { ConfiguracoesScreen(navController) }
     }
 }
 
+@Composable
+fun LoginScreen(navController: NavController) {
+    var usuario by remember { mutableStateOf("") }
+    var senha by remember { mutableStateOf("") }
+    var erro by remember { mutableStateOf<String?>(null) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFF0B3B73), Color(0xFF11325A))
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+            modifier = Modifier.fillMaxWidth(0.85f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                // Logo circular
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .background(Color(0xFF0B3B73), shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("TDL", color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+
+                OutlinedTextField(
+                    value = usuario,
+                    onValueChange = { usuario = it },
+                    label = { Text("Usuário") },
+                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+
+                OutlinedTextField(
+                    value = senha,
+                    onValueChange = { senha = it },
+                    label = { Text("Senha") },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (erro != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = erro ?: "", color = Color.Red)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+
+                Button(
+                    onClick = {
+                        if (usuario.isBlank() || senha.isBlank()) {
+                            erro = "Preencha todos os campos"
+                        } else if (usuario == "admin" && senha == "1234") {
+                            erro = null
+                            navController.navigate("home") {
+                                popUpTo("login") { inclusive = true }
+                            }
+                        } else {
+                            erro = "Usuário ou senha incorretos"
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF0B3B73),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("Entrar")
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun TelaPerfil(navController: NavController) {
@@ -66,20 +166,15 @@ fun TelaPerfil(navController: NavController) {
                 .padding(horizontal = 12.dp)
         ) {
             Spacer(modifier = Modifier.height(12.dp))
-            UmaNota("TAREFAS", Color(0xFFFF69B4)) {
-                navController.navigate("tarefas")
-            }
+            UmaNota("TAREFAS", Color(0xFFFF69B4)) { navController.navigate("tarefas") }
             Spacer(modifier = Modifier.height(12.dp))
-            UmaNota("ESTATÍSTICAS", Color(0xFF76FF03)) {
-                navController.navigate("estatisticas")
-            }
+            UmaNota("ESTATÍSTICAS", Color(0xFF76FF03)) { navController.navigate("estatisticas") }
             Spacer(modifier = Modifier.height(12.dp))
-            UmaNota("CHECKLIST", Color(0xFFFF5252)) {
-                navController.navigate("checklist")
-            }
+            UmaNota("CHECKLIST", Color(0xFFFF5252)) { navController.navigate("checklist") }
         }
 
         Header(
+            navController = navController,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(headerHeight)
@@ -90,13 +185,14 @@ fun TelaPerfil(navController: NavController) {
     }
 }
 
-
 @Composable
-fun Header(modifier: Modifier = Modifier) {
+fun Header(navController: NavController, modifier: Modifier = Modifier) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF0B3B73)), // azul escuro
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF0B3B73)),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Row(
@@ -107,44 +203,52 @@ fun Header(modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
 
+            // Menu das três barrinhas
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = {  }) {
-                    Icon(imageVector = Icons.Default.Menu, contentDescription = "menu", tint = Color.White)
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF11325A))
+                        .clickable { menuExpanded = !menuExpanded },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
                 }
-                Spacer(modifier = Modifier.width(6.dp))
 
-                Text(text = "USUARIO", style = MaterialTheme.typography.titleLarge, color = Color.White)
-            }
-
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { }) {
-                    Icon(imageVector = Icons.Default.Notifications, contentDescription = "notificações", tint = Color.White)
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(text = { Text("Perfil") }, onClick = {
+                        menuExpanded = false
+                        navController.navigate("perfil")
+                    })
+                    DropdownMenuItem(text = { Text("Configurações") }, onClick = {
+                        menuExpanded = false
+                        navController.navigate("configuracoes")
+                    })
+                    DropdownMenuItem(text = { Text("Logout") }, onClick = {
+                        menuExpanded = false
+                        navController.navigate("login") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    })
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
+                Text("USUARIO", style = MaterialTheme.typography.titleLarge, color = Color.White)
+            }
 
-                Surface(
-                    modifier = Modifier.size(42.dp),
-                    shape = CircleShape,
-                    color = Color.Transparent,
-                    border = BorderStroke(2.dp, Color.White),
-                    tonalElevation = 2.dp
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFF11325A), shape = CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "avatar",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF11325A))
+                    .clickable { navController.navigate("perfil") },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.White)
             }
         }
     }
@@ -167,28 +271,15 @@ fun UmaNota(nota: String, cor: Color, onClick: () -> Unit) {
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(32.dp)
-            )
+            Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = nota,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
-            }
+            Text(text = nota, style = MaterialTheme.typography.titleMedium, color = Color.White)
         }
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 fun TelaPerfilPreview() {
-    MyApplicationTheme {
-    }
+    MyApplicationTheme {}
 }

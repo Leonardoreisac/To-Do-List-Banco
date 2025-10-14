@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TarefasScreen() {
+fun TarefasScreen(taskDao: TaskDao) {
     var tarefas by remember {
         mutableStateOf(
             listOf(

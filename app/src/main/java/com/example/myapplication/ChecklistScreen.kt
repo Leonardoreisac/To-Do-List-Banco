@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChecklistScreen() {
+fun ChecklistScreen(habitDao: HabitDao) {
     var habitos = remember {
         mutableStateListOf("Beber 2L de água 💧", "Ler 20 páginas 📖", "Caminhar 30min 🚶")
     }

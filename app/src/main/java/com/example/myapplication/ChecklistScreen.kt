@@ -1,7 +1,10 @@
 package com.example.myapplication
 
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -10,16 +13,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChecklistScreen(habitDao: HabitDao) {
-    var habitos = remember {
-        mutableStateListOf("Beber 2L de água 💧", "Ler 20 páginas 📖", "Caminhar 30min 🚶")
-    }
-    var checkedStates = remember { mutableStateListOf(false, false, false) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // Lista de hábitos do banco
+    var habitos by remember { mutableStateOf(listOf<Habit>()) }
     var novoHabito by remember { mutableStateOf("") }
+
+    // Carregar hábitos do banco
+    LaunchedEffect(Unit) {
+        habitos = habitDao.getAll()
+    }
 
     Scaffold(
         topBar = {
@@ -35,8 +46,12 @@ fun ChecklistScreen(habitDao: HabitDao) {
             FloatingActionButton(
                 onClick = {
                     if (novoHabito.isNotBlank()) {
-                        habitos.add(novoHabito)
-                        checkedStates.add(false)
+                        val habit = Habit(title = novoHabito)
+                        scope.launch {
+                            habitDao.insert(habit)
+                            habitos = habitDao.getAll()
+                            Toast.makeText(context, "Hábito adicionado!", Toast.LENGTH_SHORT).show()
+                        }
                         novoHabito = ""
                     }
                 },
@@ -53,17 +68,16 @@ fun ChecklistScreen(habitDao: HabitDao) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
             OutlinedTextField(
                 value = novoHabito,
                 onValueChange = { novoHabito = it },
                 label = { Text("Novo hábito") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardActions = KeyboardActions {}
             )
 
-
-            habitos.forEachIndexed { index, habito ->
+            habitos.forEach { habit ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -78,26 +92,46 @@ fun ChecklistScreen(habitDao: HabitDao) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = habito,
+                            text = habit.title,
                             style = MaterialTheme.typography.bodyLarge,
                             color = Color(0xFF0B3B73)
                         )
 
-                        Checkbox(
-                            checked = checkedStates[index],
-                            onCheckedChange = { checkedStates[index] = it },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = Color(0xFF0B3B73),
-                                uncheckedColor = Color.Gray
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = habit.isDone,
+                                onCheckedChange = { checked ->
+                                    scope.launch {
+                                        habitDao.update(habit.copy(isDone = checked))
+                                        habitos = habitDao.getAll()
+                                        Toast.makeText(context, "Hábito atualizado!", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = Color(0xFF0B3B73),
+                                    uncheckedColor = Color.Gray
+                                )
                             )
-                        )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Text(
+                                text = "🗑",
+                                modifier = Modifier.clickable {
+                                    scope.launch {
+                                        habitDao.delete(habit)
+                                        habitos = habitDao.getAll()
+                                        Toast.makeText(context, "Hábito removido!", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
 
-
             val progresso =
-                if (habitos.isNotEmpty()) checkedStates.count { it }.toFloat() / habitos.size.toFloat()
+                if (habitos.isNotEmpty()) habitos.count { it.isDone }.toFloat() / habitos.size.toFloat()
                 else 0f
 
             Spacer(modifier = Modifier.height(12.dp))

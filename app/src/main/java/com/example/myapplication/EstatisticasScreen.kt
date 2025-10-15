@@ -3,26 +3,26 @@ package com.example.myapplication
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EstatisticasScreen(taskDao: TaskDao) {
+    val scope = rememberCoroutineScope()
+    var tarefas by remember { mutableStateOf(listOf<Task>()) }
 
-    val tarefas = listOf(
-        Tarefa("Comprar pão", true),
-        Tarefa("Estudar Android Studio", false),
-        Tarefa("Enviar trabalho da faculdade", true),
-        Tarefa("Ir à academia", false),
-        Tarefa("Ler 20 páginas do livro", false)
-    )
+
+    LaunchedEffect(Unit) {
+        tarefas = taskDao.getAll()
+    }
 
     val total = tarefas.size
-    val concluidas = tarefas.count { it.concluida }
+    val concluidas = tarefas.count { it.isDone }
     val pendentes = total - concluidas
     val percentual = if (total > 0) (concluidas * 100) / total else 0
 

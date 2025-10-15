@@ -1,5 +1,7 @@
 package com.example.myapplication
 
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,24 +14,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TarefasScreen(taskDao: TaskDao) {
-    var tarefas by remember {
-        mutableStateOf(
-            listOf(
-                Tarefa("Comprar pão", true),
-                Tarefa("Estudar Android Studio", false),
-                Tarefa("Enviar trabalho da faculdade", true),
-                Tarefa("Ir à academia", false),
-                Tarefa("Ler 20 páginas do livro", false)
-            )
-        )
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    var tarefas by remember { mutableStateOf(listOf<Task>()) }
+    var novaTarefa by remember { mutableStateOf("") }
+
+
+    LaunchedEffect(Unit) {
+        tarefas = taskDao.getAll()
     }
 
     val total = tarefas.size
-    val concluidas = tarefas.count { it.concluida }
+    val concluidas = tarefas.count { it.isDone }
     val pendentes = total - concluidas
 
     Scaffold(
@@ -44,7 +47,17 @@ fun TarefasScreen(taskDao: TaskDao) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { },
+                onClick = {
+                    if (novaTarefa.isNotBlank()) {
+                        val tarefa = Task(title = novaTarefa,)
+                        scope.launch {
+                            taskDao.insert(tarefa)
+                            tarefas = taskDao.getAll()
+                            Toast.makeText(context, "Tarefa adicionada!", Toast.LENGTH_SHORT).show()
+                        }
+                        novaTarefa = ""
+                    }
+                },
                 containerColor = Color(0xFF0B3B73)
             ) {
                 Icon(
@@ -61,6 +74,16 @@ fun TarefasScreen(taskDao: TaskDao) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            OutlinedTextField(
+                value = novaTarefa,
+                onValueChange = { novaTarefa = it },
+                label = { Text("Nova tarefa") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Text(
                 text = "📌 Minhas Tarefas",
                 style = MaterialTheme.typography.headlineSmall,
@@ -88,7 +111,7 @@ fun TarefasScreen(taskDao: TaskDao) {
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(6.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (tarefa.concluida) Color(0xFFDFF6DD) else Color(0xFFE3F2FD)
+                            containerColor = if (tarefa.isDone) Color(0xFFDFF6DD) else Color(0xFFE3F2FD)
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -99,10 +122,16 @@ fun TarefasScreen(taskDao: TaskDao) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
-                                checked = tarefa.concluida,
+                                checked = tarefa.isDone,
                                 onCheckedChange = { marcado ->
-                                    tarefas = tarefas.toMutableList().apply {
-                                        this[index] = this[index].copy(concluida = marcado)
+                                    scope.launch {
+                                        taskDao.update(tarefa.copy(isDone = marcado))
+                                        tarefas = taskDao.getAll()
+                                        Toast.makeText(
+                                            context,
+                                            "Tarefa ${if (marcado) "concluída" else "marcada como pendente"}!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 },
                                 colors = CheckboxDefaults.colors(
@@ -112,10 +141,22 @@ fun TarefasScreen(taskDao: TaskDao) {
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = tarefa.titulo,
+                                text = tarefa.title,
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = if (tarefa.concluida) Color.Gray else Color.Black,
-                                textDecoration = if (tarefa.concluida) TextDecoration.LineThrough else null
+                                color = if (tarefa.isDone) Color.Gray else Color.Black,
+                                textDecoration = if (tarefa.isDone) TextDecoration.LineThrough else null
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Botão de excluir com Toast
+                            Text(
+                                text = "🗑",
+                                modifier = Modifier.clickable {
+                                    scope.launch {
+                                        taskDao.delete(tarefa)
+                                        tarefas = taskDao.getAll()
+                                        Toast.makeText(context, "Tarefa removida!", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             )
                         }
                     }
@@ -124,5 +165,3 @@ fun TarefasScreen(taskDao: TaskDao) {
         }
     }
 }
-
-data class Tarefa(val titulo: String, val concluida: Boolean)

@@ -58,18 +58,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         val database = AppDatabase.getDatabase(applicationContext)
         val taskDao = database.taskDao()
         val habitDao = database.habitDao()
 
         setContent {
             MyApplicationTheme {
-
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                Surface(color = MaterialTheme.colorScheme.background) {
                     AppNavigation(taskDao, habitDao)
                 }
             }
@@ -80,18 +75,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(taskDao: TaskDao, habitDao: HabitDao) {
     val navController = rememberNavController()
-
     NavHost(navController = navController, startDestination = "login") {
         composable("login") { LoginScreen(navController) }
         composable("home") { TelaPerfil(navController) }
         composable("tarefas") { TarefasScreen(taskDao) }
-        composable("estatisticas") { EstatisticasScreen(taskDao) }
         composable("checklist") { ChecklistScreen(habitDao) }
         composable("perfil") { PerfilScreen(navController) }
         composable("configuracoes") { ConfiguracoesScreen(navController) }
     }
 }
-
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -122,7 +114,7 @@ fun LoginScreen(navController: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // Logo circular
+
                 Box(
                     modifier = Modifier
                         .size(100.dp)
@@ -134,7 +126,6 @@ fun LoginScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-
                 OutlinedTextField(
                     value = usuario,
                     onValueChange = { usuario = it },
@@ -145,7 +136,6 @@ fun LoginScreen(navController: NavController) {
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-
 
                 OutlinedTextField(
                     value = senha,
@@ -163,7 +153,6 @@ fun LoginScreen(navController: NavController) {
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-
 
                 Button(
                     onClick = {
@@ -243,7 +232,7 @@ fun Header(navController: NavController, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
 
-            // Menu das três barrinhas
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -318,8 +307,3 @@ fun UmaNota(nota: String, cor: Color, onClick: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun TelaPerfilPreview() {
-    MyApplicationTheme {}
-}

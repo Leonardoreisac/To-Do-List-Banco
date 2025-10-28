@@ -20,19 +20,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,30 +38,54 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myapplication.data.local.AppDatabase
+import com.example.myapplication.data.repository.HabitRepository
+import com.example.myapplication.data.repository.TaskRepository
+import com.example.myapplication.ui.checklist.ChecklistScreen
+import com.example.myapplication.ui.checklist.ChecklistViewModelFactory
+import com.example.myapplication.ui.config.ConfiguracoesScreen
+import com.example.myapplication.ui.estatisticas.EstatisticasScreen
+import com.example.myapplication.ui.estatisticas.EstatisticasViewModelFactory
+import com.example.myapplication.ui.home.PerfilScreen
+import com.example.myapplication.ui.login.LoginScreen
+import com.example.myapplication.ui.tarefas.TarefasScreen
+import com.example.myapplication.ui.tarefas.TaskViewModelFactory
 import com.example.myapplication.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var taskFactory: TaskViewModelFactory
+    private lateinit var checklistFactory: ChecklistViewModelFactory
+    private lateinit var estatisticasFactory: EstatisticasViewModelFactory
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val database = AppDatabase.getDatabase(applicationContext)
-        val taskDao = database.taskDao()
-        val habitDao = database.habitDao()
+        val taskRepository = TaskRepository(database.taskDao())
+        val habitRepository = HabitRepository(database.habitDao())
+
+        taskFactory = TaskViewModelFactory(taskRepository)
+        checklistFactory = ChecklistViewModelFactory(habitRepository)
+        estatisticasFactory = EstatisticasViewModelFactory(taskRepository, habitRepository)
 
         setContent {
             MyApplicationTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    AppNavigation(taskDao, habitDao)
+
+                    AppNavigation(
+                        taskFactory = taskFactory,
+                        checklistFactory = checklistFactory,
+                        estatisticasFactory = estatisticasFactory
+                    )
                 }
             }
         }
@@ -73,113 +93,47 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation(taskDao: TaskDao, habitDao: HabitDao) {
+fun AppNavigation(
+    taskFactory: TaskViewModelFactory,
+    checklistFactory: ChecklistViewModelFactory,
+    estatisticasFactory: EstatisticasViewModelFactory
+) {
     val navController = rememberNavController()
+
     NavHost(navController = navController, startDestination = "login") {
-        composable("login") { LoginScreen(navController) }
+
+        // LOGIN SCREEN
+        composable("login") {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // HOME/PERFIL SCREEN
         composable("home") { TelaPerfil(navController) }
-        composable("tarefas") { TarefasScreen(taskDao) }
-        composable("checklist") { ChecklistScreen(habitDao) }
+
+        // TAREFAS SCREEN (MVVM)
+        composable("tarefas") {
+            TarefasScreen(viewModel = viewModel(factory = taskFactory))
+        }
+
+        // CHECKLIST SCREEN (MVVM)
+        composable("checklist") {
+            ChecklistScreen(viewModel = viewModel(factory = checklistFactory))
+        }
+
+        // ESTATÍSTICAS SCREEN (MVVM)
+        composable("estatisticas") {
+            EstatisticasScreen(viewModel = viewModel(factory = estatisticasFactory))
+        }
+
+        // OUTRAS TELAS
         composable("perfil") { PerfilScreen(navController) }
         composable("configuracoes") { ConfiguracoesScreen(navController) }
-    }
-}
-
-@Composable
-fun LoginScreen(navController: NavController) {
-    var usuario by remember { mutableStateOf("") }
-    var senha by remember { mutableStateOf("") }
-    var erro by remember { mutableStateOf<String?>(null) }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFF0B3B73), Color(0xFF11325A))
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-            modifier = Modifier.fillMaxWidth(0.85f)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .background(Color(0xFF0B3B73), shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("TDL", color = Color.White, style = MaterialTheme.typography.headlineMedium)
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                OutlinedTextField(
-                    value = usuario,
-                    onValueChange = { usuario = it },
-                    label = { Text("Usuário") },
-                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = senha,
-                    onValueChange = { senha = it },
-                    label = { Text("Senha") },
-                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                    visualTransformation = PasswordVisualTransformation(),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                if (erro != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = erro ?: "", color = Color.Red)
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        if (usuario.isBlank() || senha.isBlank()) {
-                            erro = "Preencha todos os campos"
-                        } else if (usuario == "admin" && senha == "1234") {
-                            erro = null
-                            navController.navigate("home") {
-                                popUpTo("login") { inclusive = true }
-                            }
-                        } else {
-                            erro = "Usuário ou senha incorretos"
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0B3B73),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("Entrar")
-                }
-            }
-        }
     }
 }
 
@@ -231,8 +185,6 @@ fun Header(navController: NavController, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-
-
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -300,10 +252,9 @@ fun UmaNota(nota: String, cor: Color, onClick: () -> Unit) {
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+            Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Text(text = nota, style = MaterialTheme.typography.titleMedium, color = Color.White)
         }
     }
 }
-

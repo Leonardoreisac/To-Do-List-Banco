@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.myapplication
+package com.example.myapplication.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
